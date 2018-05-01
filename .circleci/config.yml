@@ -1,0 +1,43 @@
+version: 2
+jobs:
+  build:
+    docker:
+    - image: circleci/node:8
+      command: /sbin/init
+    - image: circleci/postgres:9.6.8-alpine-postgis-ram
+    environment:
+      NODE_ENV: "circleci"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: ""
+    steps:
+    - checkout
+    - setup_remote_docker
+    - restore_cache:
+        keys:
+        - v1-dep-{{ .Branch }}-
+        - v1-dep-master-
+        - v1-dep-
+
+    - run: npm install
+    - save_cache:
+        key: v1-dep-{{ .Branch }}-{{ epoch }}
+        paths:
+        - ./node_modules
+
+    - run: npm run db:setup
+    - run: npm run test
+
+# XXX not migrated
+# general:
+#   branches:
+#     ignore:
+#       - test-server
+#       - staging
+#       - production
+
+# XXX Should I keep this?
+# deployment:
+#   staging:
+#     branch: staging
+#     heroku:
+#       appname: opencollective-staging-api

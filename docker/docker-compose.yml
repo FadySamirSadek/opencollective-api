@@ -12,6 +12,16 @@ services:
       - "13060:3060"
     depends_on:
       - postgres
+
+  test:
+    build: ./api
+    command: /usr/src/api/docker/wait-for-db.sh npm run test
+    environment:
+      NODE_ENV: "docker"
+      SEQUELIZE_ENV: "docker"
+    volumes:
+      - ..:/usr/src/api
+
   postgres:
     # Using this image referenced by the following github issue:
     # https://github.com/docker-library/postgres/issues/199
