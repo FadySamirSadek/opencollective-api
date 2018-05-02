@@ -28,6 +28,7 @@ else
     fi
   else
     echo "✓ opencollective_dvl exists, running migration if any"
+    npm run db:setup
     npm run db:migrate
   fi
 
