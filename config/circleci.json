@@ -1,6 +1,6 @@
 {
   "database": {
-    "database": "circle_test",
+    "database": "opencollective_dvl",
     "username": "opencollective",
     "password": "",
     "options": {

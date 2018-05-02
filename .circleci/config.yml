@@ -6,9 +6,12 @@ jobs:
       command: /sbin/init
     - image: circleci/postgres:9.6.8-alpine-postgis-ram
     environment:
+      TZ: "UTC"
       NODE_ENV: "circleci"
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: ""
+      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
+      CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
     steps:
     - checkout
     - setup_remote_docker
@@ -18,14 +21,18 @@ jobs:
         - v1-dep-master-
         - v1-dep-
 
+    - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
+
     - run: npm install
+
     - save_cache:
         key: v1-dep-{{ .Branch }}-{{ epoch }}
         paths:
         - ./node_modules
 
-    - run: npm run db:setup
     - run: npm run test
+    - store_test_results:
+        path: /tmp/circleci-test-results
 
 # XXX not migrated
 # general:
