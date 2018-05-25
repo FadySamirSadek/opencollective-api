@@ -16,7 +16,7 @@ export default {
     return Promise.resolve({ amount: paymentMethod.monthlyLimitPerMember, currency: paymentMethod.currency});
   },
 
-  processOrder: (order) => {
+  processOrder: async (order) => {
     /*
       - use gift card PaymentMethod (PM) to transfer money from gift card issuer to User
       - mark original gift card PM as "archivedAt" (it's used up)
@@ -29,17 +29,37 @@ export default {
 
     let newPM, transactions;
 
+    let FromCollectiveId = order.paymentMethod.CollectiveId;
+
+    // hacky, HostCollectiveId doesn't quite make sense in this
+    // context but required by ledger. TODO: fix later.
+    let HostCollectiveId = order.paymentMethod.CollectiveId;
+
+    // If this is a payment method of a host for a specific
+    // collective, then we find the collective and its actual
+    // host. This is not hacky. The funds were added to this customer
+    // id in the host's bank account. We need this association in
+    // order to charge the host per transaction.
+    if (originalPM.customerId) {
+      const fromCollective = await models.Collective.findById(order.FromCollectiveId);
+      if (originalPM.customerId === fromCollective.slug) {
+        FromCollectiveId = fromCollective.id;
+        console.log(fromCollective);
+        HostCollectiveId = originalPM.data.HostCollectiveId;
+      }
+    }
+
     // Check that target Collective's Host is same as gift card issuer
     return order.collective.getHostCollective()
       .then(hostCollective => {
-        if (hostCollective.id !== order.paymentMethod.CollectiveId) {
+        if (hostCollective.id !== HostCollectiveId) {
           console.log('Different host found');
           return Promise.resolve();
         } else {
           // transfer all money using gift card from Host to User
           const payload = {
             CreatedByUserId: user.id,
-            FromCollectiveId: order.paymentMethod.CollectiveId,
+            FromCollectiveId,
             CollectiveId: user.CollectiveId,
             PaymentMethodId: order.PaymentMethodId,
             transaction: {
@@ -54,7 +74,7 @@ export default {
               platformFeeInHostCurrency: 0, // we don't charge a fee until the money is used by User
               paymentProcessorFeeInHostCurrency: 0,
               description: order.paymentMethod.name,
-              HostCollectiveId: order.paymentMethod.CollectiveId // hacky, HostCollectiveId doesn't quite make sense in this context but required by ledger. TODO: fix later.
+              HostCollectiveId,
             }
           };
           return models.Transaction.createFromPayload(payload)
