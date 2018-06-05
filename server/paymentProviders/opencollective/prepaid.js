@@ -8,7 +8,7 @@ import * as constants from '../../constants/transactions';
 
 export default {
   features: {
-    recurring: false,
+    recurring: true,
     waitToCharge: false
   },
 
